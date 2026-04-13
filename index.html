@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>GitHub Copilot 成本計算機</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5b6475;
+      --border: #d9dfeb;
+      --accent: #315efb;
+      --accent-soft: #e9efff;
+      --good: #0f9d58;
+      --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    .hero { margin-bottom: 24px; }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.15;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 16px;
+    }
+    .label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      font-size: 18px;
+      color: var(--text);
+      outline: none;
+    }
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(49, 94, 251, 0.12);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #eef2f8;
+      color: var(--text);
+    }
+    .hint {
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .recommendation {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin: 0 0 12px;
+    }
+    .explain {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+    .price-grid {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .price-item {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fcfdff;
+    }
+    .price-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .price-name {
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .price-value {
+      font-weight: 800;
+      font-size: 22px;
+    }
+    .price-meta {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .best {
+      border-color: rgba(15, 157, 88, 0.35);
+      background: rgba(15, 157, 88, 0.06);
+    }
+    .best .price-name,
+    .best .price-value {
+      color: var(--good);
+    }
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .footnote {
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .small-tag {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef7f1;
+      color: var(--good);
+      vertical-align: middle;
+    }
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .recommendation {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>GitHub Copilot 成本計算機</h1>
+      <p class="sub">
+        輸入你每月預估的 premium requests 總用量，系統會自動比較「Pro + 超額」「第 2 個 Pro 帳號」與「Pro+」三種方式，並給出最划算建議。
+      </p>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2 class="section-title">輸入用量</h2>
+        <label class="label" for="usageInput">每月總用量（premium requests）</label>
+        <input id="usageInput" type="number" min="0" step="1" value="600" inputmode="numeric" />
+
+        <div class="controls">
+          <button class="btn-primary" id="calcBtn">開始計算</button>
+          <button class="btn-secondary" id="resetBtn">重設</button>
+        </div>
+
+        <p class="hint">
+          預設公式：Pro = 10 美元 / 300 requests；Pro+ = 39 美元 / 1500 requests；超額 = 0.04 美元 / request。<br>
+          第 2 個 Pro 帳號這裡是以「總成本 20 美元，可覆蓋最多 600 requests」來比較。
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>方案</th>
+                <th>成本</th>
+                <th>說明</th>
+              </tr>
+            </thead>
+            <tbody id="detailTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="result-badge">自動判斷結果</div>
+        <h2 class="recommendation" id="recommendationText">載入中...</h2>
+        <p class="explain" id="explainText"></p>
+
+        <div class="price-grid" id="priceGrid"></div>
+
+        <p class="footnote">
+          提醒：這是純成本比較。實際選擇時，還要考慮帳號切換、設定分裂、聊天紀錄分裂與工作流流暢度。
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const PRO_PRICE = 10;
+      const PRO_INCLUDED = 300;
+      const OVERAGE_PRICE = 0.04;
+      const SECOND_PRO_PRICE = 20;
+      const SECOND_PRO_INCLUDED = 600;
+      const PRO_PLUS_PRICE = 39;
+      const PRO_PLUS_INCLUDED = 1500;
+
+      const usageInput = document.getElementById('usageInput');
+      const calcBtn = document.getElementById('calcBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const recommendationText = document.getElementById('recommendationText');
+      const explainText = document.getElementById('explainText');
+      const priceGrid = document.getElementById('priceGrid');
+      const detailTableBody = document.getElementById('detailTableBody');
+
+      function money(value) {
+        return new Intl.NumberFormat('zh-TW', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value);
+      }
+
+      function integer(value) {
+        return new Intl.NumberFormat('zh-TW').format(value);
+      }
+
+      function clampUsage(value) {
+        if (!Number.isFinite(value) || value < 0) return 0;
+        return Math.floor(value);
+      }
+
+      function calculate(usage) {
+        const proOverageCost = usage <= PRO_INCLUDED
+          ? PRO_PRICE
+          : PRO_PRICE + (usage - PRO_INCLUDED) * OVERAGE_PRICE;
+
+        const secondProAvailable = usage <= SECOND_PRO_INCLUDED;
+        const secondProCost = secondProAvailable ? SECOND_PRO_PRICE : Infinity;
+
+        const proPlusAvailable = usage <= PRO_PLUS_INCLUDED;
+        const proPlusCost = proPlusAvailable ? PRO_PLUS_PRICE : Infinity;
+
+        const options = [
+          {
+            key: 'pro_overage',
+            name: 'Pro + 超額購買',
+            cost: proOverageCost,
+            available: true,
+            description: usage <= PRO_INCLUDED
+              ? `用量在 ${integer(PRO_INCLUDED)} 以內，直接用 Pro 方案即可。`
+              : `超出 ${integer(PRO_INCLUDED)} 的部分，以每個 ${money(OVERAGE_PRICE)} 計算。`
+          },
+          {
+            key: 'second_pro',
+            name: '開第 2 個 Pro 帳號',
+            cost: secondProCost,
+            available: secondProAvailable,
+            description: secondProAvailable
+              ? `總成本固定 ${money(SECOND_PRO_PRICE)}，可覆蓋最多 ${integer(SECOND_PRO_INCLUDED)} requests。`
+              : `此比較器只把「第 2 個 Pro 帳號」定義為最多 ${integer(SECOND_PRO_INCLUDED)} requests 的方案。`
+          },
+          {
+            key: 'pro_plus',
+            name: '升級 Pro+',
+            cost: proPlusCost,
+            available: proPlusAvailable,
+            description: proPlusAvailable
+              ? `${money(PRO_PLUS_PRICE)} 可覆蓋最多 ${integer(PRO_PLUS_INCLUDED)} requests。`
+              : `此用量已超過 Pro+ 內含的 ${integer(PRO_PLUS_INCLUDED)} requests。`
+          }
+        ];
+
+        const validOptions = options.filter(item => item.available);
+        const best = validOptions.reduce((min, item) => item.cost < min.cost ? item : min, validOptions[0]);
+
+        return { usage, options, best };
+      }
+
+      function buildAdvice(result) {
+        const usage = result.usage;
+        const best = result.best;
+
+        if (best.key === 'pro_overage') {
+          if (usage <= PRO_INCLUDED) {
+            return {
+              title: '最划算：直接使用 Pro 方案',
+              text: `你目前輸入的用量是 ${integer(usage)}，還沒有超過 Pro 內含的 ${integer(PRO_INCLUDED)} requests，所以不需要第二帳號，也不需要升級 Pro+。`
+            };
+          }
+          return {
+            title: '最划算：Pro + 超額購買',
+            text: `以你目前每月約 ${integer(usage)} 的用量來看，直接用 Pro 再補買超額 requests，成本仍低於第二個 Pro 帳號或 Pro+。這種情況通常適合偶爾爆量，但沒有高到需要長期升級的人。`
+          };
+        }
+
+        if (best.key === 'second_pro') {
+          return {
+            title: '最划算：開第 2 個 Pro 帳號',
+            text: `以純價格來看，你目前每月約 ${integer(usage)} 的用量，已經進入第二個 Pro 帳號比較有優勢的區間。不過這會增加帳號切換、設定分裂與上下文分散的成本。`
+          };
+        }
+
+        return {
+          title: '最划算：升級 Pro+',
+          text: `你目前每月約 ${integer(usage)} 的用量，已經屬於重度使用區間。這時候直接升級 Pro+ 通常比多帳號管理更乾淨，也更適合長期穩定使用。`
+        };
+      }
+
+      function render(result) {
+        const advice = buildAdvice(result);
+        recommendationText.textContent = advice.title;
+        explainText.textContent = advice.text;
+
+        priceGrid.innerHTML = '';
+        detailTableBody.innerHTML = '';
+
+        result.options.forEach(option => {
+          const isBest = option.available && option.key === result.best.key;
+          const card = document.createElement('div');
+          card.className = 'price-item' + (isBest ? ' best' : '');
+          card.innerHTML = `
+            <div class="price-top">
+              <div class="price-name">${option.name}${isBest ? '<span class="small-tag">最省</span>' : ''}</div>
+              <div class="price-value">${option.available ? money(option.cost) : '不適用'}</div>
+            </div>
+            <div class="price-meta">${option.description}</div>
+          `;
+          priceGrid.appendChild(card);
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${option.name}</td>
+            <td>${option.available ? money(option.cost) : '不適用'}</td>
+            <td>${option.description}</td>
+          `;
+          detailTableBody.appendChild(row);
+        });
+      }
+
+      function run() {
+        const usage = clampUsage(Number(usageInput.value));
+        usageInput.value = String(usage);
+        const result = calculate(usage);
+        render(result);
+      }
+
+      calcBtn.addEventListener('click', run);
+      resetBtn.addEventListener('click', function () {
+        usageInput.value = '600';
+        run();
+      });
+      usageInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') run();
+      });
+
+      run();
+    })();
+  </script>
+</body>
+</html>
