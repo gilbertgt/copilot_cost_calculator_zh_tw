@@ -15,7 +15,6 @@
       --accent: #315efb;
       --accent-soft: #e9efff;
       --good: #0f9d58;
-      --warn: #c27a00;
       --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
       --radius: 18px;
     }
@@ -30,14 +29,12 @@
     }
 
     .wrap {
-      max-width: 980px;
+      max-width: 1120px;
       margin: 0 auto;
       padding: 32px 20px 56px;
     }
 
-    .hero {
-      margin-bottom: 24px;
-    }
+    .hero { margin-bottom: 24px; }
 
     h1 {
       margin: 0 0 10px;
@@ -54,7 +51,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
+      grid-template-columns: 1.05fr 0.95fr;
       gap: 20px;
     }
 
@@ -79,6 +76,11 @@
       margin-bottom: 8px;
     }
 
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
     input[type="number"] {
       width: 100%;
       padding: 14px 16px;
@@ -97,7 +99,7 @@
     .controls {
       display: flex;
       gap: 12px;
-      margin-top: 14px;
+      margin-top: 10px;
       flex-wrap: wrap;
     }
 
@@ -217,6 +219,7 @@
       padding: 12px 10px;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
+      vertical-align: top;
     }
 
     th {
@@ -243,14 +246,20 @@
       vertical-align: middle;
     }
 
-    @media (max-width: 800px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+    .formula {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #f8faff;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
 
-      .recommendation {
-        font-size: 22px;
-      }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .recommendation { font-size: 22px; }
     }
   </style>
 </head>
@@ -259,32 +268,62 @@
     <section class="hero">
       <h1>GitHub Copilot 成本計算機</h1>
       <p class="sub">
-        輸入你每月預估的 premium requests 總用量，系統會自動比較「Pro + 超額」「第 2 個 Pro 帳號」與「Pro+」三種方式，並給出最划算建議。
+        輸入每月 premium requests 總用量，系統會自動尋找最省的組合。這個版本不再只比較固定三種方案，而是會把第 2 個、第 3 個、第 4 個 Pro，以及第 2 個、第 3 個 Pro+ 等組合一起納入計算。
       </p>
     </section>
 
     <section class="grid">
       <div class="card">
-        <h2 class="section-title">輸入用量</h2>
-        <label class="label" for="usageInput">每月總用量（premium requests）</label>
-        <input id="usageInput" type="number" min="0" step="1" value="600" inputmode="numeric" />
+        <h2 class="section-title">輸入參數</h2>
+        <div class="stack">
+          <div>
+            <label class="label" for="usageInput">每月總用量（premium requests）</label>
+            <input id="usageInput" type="number" min="0" step="1" value="2100" inputmode="numeric" />
+          </div>
+
+          <div>
+            <label class="label" for="proPriceInput">Pro 月費（美元）</label>
+            <input id="proPriceInput" type="number" min="0" step="0.01" value="10" inputmode="decimal" />
+          </div>
+
+          <div>
+            <label class="label" for="proIncludedInput">Pro 內含 requests</label>
+            <input id="proIncludedInput" type="number" min="0" step="1" value="300" inputmode="numeric" />
+          </div>
+
+          <div>
+            <label class="label" for="proPlusPriceInput">Pro+ 月費（美元）</label>
+            <input id="proPlusPriceInput" type="number" min="0" step="0.01" value="39" inputmode="decimal" />
+          </div>
+
+          <div>
+            <label class="label" for="proPlusIncludedInput">Pro+ 內含 requests</label>
+            <input id="proPlusIncludedInput" type="number" min="0" step="1" value="1500" inputmode="numeric" />
+          </div>
+
+          <div>
+            <label class="label" for="overagePriceInput">Pro 超額單價（美元 / request）</label>
+            <input id="overagePriceInput" type="number" min="0" step="0.0001" value="0.04" inputmode="decimal" />
+          </div>
+        </div>
 
         <div class="controls">
           <button class="btn-primary" id="calcBtn">開始計算</button>
-          <button class="btn-secondary" id="resetBtn">重設</button>
+          <button class="btn-secondary" id="resetBtn">重設預設值</button>
         </div>
 
-        <p class="hint">
-          預設公式：Pro = 10 美元 / 300 requests；Pro+ = 39 美元 / 1500 requests；超額 = 0.04 美元 / request。<br>
-          第 2 個 Pro 帳號這裡是以「總成本 20 美元，可覆蓋最多 600 requests」來比較。
-        </p>
+        <div class="formula">
+          計算方式：允許任意數量的 Pro 與 Pro+ 疊加，並假設超額購買只發生在 Pro 上。<br>
+          系統會枚舉可行組合，找出能覆蓋你的總用量且總成本最低的方案。
+        </div>
 
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>方案</th>
-                <th>成本</th>
+                <th>候選方案</th>
+                <th>月成本</th>
+                <th>可覆蓋 requests</th>
                 <th>說明</th>
               </tr>
             </thead>
@@ -294,14 +333,12 @@
       </div>
 
       <div class="card">
-        <div class="result-badge">自動判斷結果</div>
+        <div class="result-badge">最佳解</div>
         <h2 class="recommendation" id="recommendationText">載入中...</h2>
         <p class="explain" id="explainText"></p>
-
         <div class="price-grid" id="priceGrid"></div>
-
         <p class="footnote">
-          提醒：這是<strong>純成本比較</strong>。實際選擇時，還要考慮帳號切換、設定分裂、聊天紀錄分裂與工作流流暢度。
+          這裡找的是數學上的最便宜組合。實際上你還要自行評估多帳號切換、登入管理、工作流連續性與使用體驗成本。
         </p>
       </div>
     </section>
@@ -309,15 +346,21 @@
 
   <script>
     (function () {
-      const PRO_PRICE = 10;
-      const PRO_INCLUDED = 300;
-      const OVERAGE_PRICE = 0.04;
-      const SECOND_PRO_PRICE = 20;
-      const SECOND_PRO_INCLUDED = 600;
-      const PRO_PLUS_PRICE = 39;
-      const PRO_PLUS_INCLUDED = 1500;
+      const DEFAULTS = {
+        usage: 2100,
+        proPrice: 10,
+        proIncluded: 300,
+        proPlusPrice: 39,
+        proPlusIncluded: 1500,
+        overagePrice: 0.04
+      };
 
       const usageInput = document.getElementById('usageInput');
+      const proPriceInput = document.getElementById('proPriceInput');
+      const proIncludedInput = document.getElementById('proIncludedInput');
+      const proPlusPriceInput = document.getElementById('proPlusPriceInput');
+      const proPlusIncludedInput = document.getElementById('proPlusIncludedInput');
+      const overagePriceInput = document.getElementById('overagePriceInput');
       const calcBtn = document.getElementById('calcBtn');
       const resetBtn = document.getElementById('resetBtn');
       const recommendationText = document.getElementById('recommendationText');
@@ -338,135 +381,217 @@
         return new Intl.NumberFormat('zh-TW').format(value);
       }
 
-      function clampUsage(value) {
+      function num(value) {
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function floorNonNegative(value) {
         if (!Number.isFinite(value) || value < 0) return 0;
         return Math.floor(value);
       }
 
-      function calculate(usage) {
-        const proOverageCost = usage <= PRO_INCLUDED
-          ? PRO_PRICE
-          : PRO_PRICE + (usage - PRO_INCLUDED) * OVERAGE_PRICE;
-
-        const secondProAvailable = usage <= SECOND_PRO_INCLUDED;
-        const secondProCost = secondProAvailable ? SECOND_PRO_PRICE : Infinity;
-
-        const proPlusAvailable = usage <= PRO_PLUS_INCLUDED;
-        const proPlusCost = proPlusAvailable ? PRO_PLUS_PRICE : Infinity;
-
-        const options = [
-          {
-            key: 'pro_overage',
-            name: 'Pro + 超額購買',
-            cost: proOverageCost,
-            available: true,
-            description: usage <= PRO_INCLUDED
-              ? `用量在 ${integer(PRO_INCLUDED)} 以內，直接用 Pro 方案即可。`
-              : `超出 ${integer(PRO_INCLUDED)} 的部分，以每個 ${money(OVERAGE_PRICE)} 計算。`
-          },
-          {
-            key: 'second_pro',
-            name: '開第 2 個 Pro 帳號',
-            cost: secondProCost,
-            available: secondProAvailable,
-            description: secondProAvailable
-              ? `總成本固定 ${money(SECOND_PRO_PRICE)}，可覆蓋最多 ${integer(SECOND_PRO_INCLUDED)} requests。`
-              : `此比較器只把「第 2 個 Pro 帳號」定義為最多 ${integer(SECOND_PRO_INCLUDED)} requests 的方案。`
-          },
-          {
-            key: 'pro_plus',
-            name: '升級 Pro+',
-            cost: proPlusCost,
-            available: proPlusAvailable,
-            description: proPlusAvailable
-              ? `${money(PRO_PLUS_PRICE)} 可覆蓋最多 ${integer(PRO_PLUS_INCLUDED)} requests。`
-              : `此用量已超過 Pro+ 內含的 ${integer(PRO_PLUS_INCLUDED)} requests。`
-          }
-        ];
-
-        const validOptions = options.filter(item => item.available);
-        const best = validOptions.reduce((min, item) => item.cost < min.cost ? item : min, validOptions[0]);
-
-        return { usage, options, best };
+      function ceilDiv(a, b) {
+        if (b <= 0) return 0;
+        return Math.ceil(a / b);
       }
 
-      function buildAdvice(result) {
-        const usage = result.usage;
-        const best = result.best;
+      function round2(value) {
+        return Math.round((value + Number.EPSILON) * 100) / 100;
+      }
 
-        if (best.key === 'pro_overage') {
-          if (usage <= PRO_INCLUDED) {
-            return {
-              title: '最划算：直接使用 Pro 方案',
-              text: `你目前輸入的用量是 ${integer(usage)}，還沒有超過 Pro 內含的 ${integer(PRO_INCLUDED)} requests，所以不需要第二帳號，也不需要升級 Pro+。`
-            };
-          }
-          return {
-            title: '最划算：Pro + 超額購買',
-            text: `以你目前每月約 ${integer(usage)} 的用量來看，直接用 Pro 再補買超額 requests，成本仍低於第二個 Pro 帳號或 Pro+。這種情況通常適合偶爾爆量，但沒有高到需要長期升級的人。`
-          };
-        }
-
-        if (best.key === 'second_pro') {
-          return {
-            title: '最划算：開第 2 個 Pro 帳號',
-            text: `以純價格來看，你目前每月約 ${integer(usage)} 的用量，已經進入第二個 Pro 帳號比較有優勢的區間。不過這會增加帳號切換、設定分裂與上下文分散的成本。`
-          };
-        }
-
+      function getInputs() {
         return {
-          title: '最划算：升級 Pro+',
-          text: `你目前每月約 ${integer(usage)} 的用量，已經屬於重度使用區間。這時候直接升級 Pro+ 通常比多帳號管理更乾淨，也更適合長期穩定使用。`
+          usage: floorNonNegative(Number(usageInput.value)),
+          proPrice: Math.max(0, num(Number(proPriceInput.value))),
+          proIncluded: floorNonNegative(Number(proIncludedInput.value)),
+          proPlusPrice: Math.max(0, num(Number(proPlusPriceInput.value))),
+          proPlusIncluded: floorNonNegative(Number(proPlusIncludedInput.value)),
+          overagePrice: Math.max(0, num(Number(overagePriceInput.value)))
         };
       }
 
-      function render(result) {
-        const advice = buildAdvice(result);
+      function setDefaults() {
+        usageInput.value = String(DEFAULTS.usage);
+        proPriceInput.value = String(DEFAULTS.proPrice);
+        proIncludedInput.value = String(DEFAULTS.proIncluded);
+        proPlusPriceInput.value = String(DEFAULTS.proPlusPrice);
+        proPlusIncludedInput.value = String(DEFAULTS.proPlusIncluded);
+        overagePriceInput.value = String(DEFAULTS.overagePrice);
+      }
+
+      function describeCombo(proCount, proPlusCount, overage, params) {
+        const parts = [];
+        if (proCount > 0) parts.push(`Pro × ${integer(proCount)}`);
+        if (proPlusCount > 0) parts.push(`Pro+ × ${integer(proPlusCount)}`);
+        if (overage > 0) parts.push(`Pro 超額 × ${integer(overage)}`);
+        const label = parts.length ? parts.join(' + ') : '無方案';
+
+        const included = proCount * params.proIncluded + proPlusCount * params.proPlusIncluded;
+        const overageText = overage > 0 ? `，其中超額來自 Pro 的額外購買` : '';
+        return {
+          label,
+          note: `基礎額度 ${integer(included)}，總覆蓋 ${integer(included + overage)}${overageText}。`
+        };
+      }
+
+      function computeCandidates(params) {
+        const { usage, proPrice, proIncluded, proPlusPrice, proPlusIncluded, overagePrice } = params;
+        const candidates = [];
+
+        if (usage === 0) {
+          candidates.push({
+            label: '不用購買',
+            cost: 0,
+            coverage: 0,
+            note: '你的每月總用量是 0，不需要任何方案。',
+            proCount: 0,
+            proPlusCount: 0,
+            overage: 0
+          });
+          return candidates;
+        }
+
+        const safeProMax = proIncluded > 0 ? ceilDiv(usage, proIncluded) + 2 : 6;
+        const safeProPlusMax = proPlusIncluded > 0 ? ceilDiv(usage, proPlusIncluded) + 2 : 6;
+
+        if (proIncluded > 0 || proPlusIncluded > 0) {
+          for (let proCount = 0; proCount <= safeProMax; proCount += 1) {
+            for (let proPlusCount = 0; proPlusCount <= safeProPlusMax; proPlusCount += 1) {
+              if (proCount === 0 && proPlusCount === 0) continue;
+
+              const included = proCount * proIncluded + proPlusCount * proPlusIncluded;
+              if (included < usage) continue;
+
+              const cost = round2(proCount * proPrice + proPlusCount * proPlusPrice);
+              const combo = describeCombo(proCount, proPlusCount, 0, params);
+              candidates.push({
+                label: combo.label,
+                cost,
+                coverage: included,
+                note: combo.note,
+                proCount,
+                proPlusCount,
+                overage: 0
+              });
+            }
+          }
+        }
+
+        if (proIncluded > 0) {
+          const proOnlyCount = Math.max(1, ceilDiv(usage, proIncluded));
+          const maxProForOverage = Math.max(safeProMax, proOnlyCount + 2);
+
+          for (let proCount = 1; proCount <= maxProForOverage; proCount += 1) {
+            const included = proCount * proIncluded;
+            const overage = Math.max(0, usage - included);
+            const cost = round2(proCount * proPrice + overage * overagePrice);
+            const combo = describeCombo(proCount, 0, overage, params);
+            candidates.push({
+              label: combo.label,
+              cost,
+              coverage: included + overage,
+              note: combo.note,
+              proCount,
+              proPlusCount: 0,
+              overage
+            });
+          }
+        }
+
+        candidates.sort((a, b) => {
+          if (a.cost !== b.cost) return a.cost - b.cost;
+          if (a.proPlusCount !== b.proPlusCount) return a.proPlusCount - b.proPlusCount;
+          if (a.proCount !== b.proCount) return a.proCount - b.proCount;
+          return a.coverage - b.coverage;
+        });
+
+        const dedup = [];
+        const seen = new Set();
+        for (const item of candidates) {
+          const key = `${item.label}|${item.cost}|${item.coverage}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            dedup.push(item);
+          }
+        }
+        return dedup;
+      }
+
+      function buildAdvice(best, params) {
+        if (params.usage === 0) {
+          return {
+            title: '目前不需要任何方案',
+            text: '因為你的每月總用量是 0，所以最佳解就是不購買。'
+          };
+        }
+
+        const parts = [];
+        if (best.proCount > 0) parts.push(`${integer(best.proCount)} 個 Pro`);
+        if (best.proPlusCount > 0) parts.push(`${integer(best.proPlusCount)} 個 Pro+`);
+        if (best.overage > 0) parts.push(`再加 ${integer(best.overage)} 個 Pro 超額 requests`);
+
+        return {
+          title: `最划算：${best.label}`,
+          text: `以你目前每月約 ${integer(params.usage)} 的總用量來看，數學上最省的是 ${parts.join('、')}。這組合每月成本約 ${money(best.cost)}，可覆蓋 ${integer(best.coverage)} 個 requests。`
+        };
+      }
+
+      function render(params) {
+        const candidates = computeCandidates(params);
+        const best = candidates[0];
+        const advice = buildAdvice(best, params);
+
         recommendationText.textContent = advice.title;
         explainText.textContent = advice.text;
-
         priceGrid.innerHTML = '';
         detailTableBody.innerHTML = '';
 
-        result.options.forEach(option => {
-          const isBest = option.available && option.key === result.best.key;
+        candidates.slice(0, 8).forEach((item, index) => {
+          const isBest = index === 0;
           const card = document.createElement('div');
           card.className = 'price-item' + (isBest ? ' best' : '');
           card.innerHTML = `
             <div class="price-top">
-              <div class="price-name">${option.name}${isBest ? '<span class="small-tag">最省</span>' : ''}</div>
-              <div class="price-value">${option.available ? money(option.cost) : '不適用'}</div>
+              <div class="price-name">${item.label}${isBest ? '<span class="small-tag">最省</span>' : ''}</div>
+              <div class="price-value">${money(item.cost)}</div>
             </div>
-            <div class="price-meta">${option.description}</div>
+            <div class="price-meta">可覆蓋 ${integer(item.coverage)} requests。${item.note}</div>
           `;
           priceGrid.appendChild(card);
 
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td>${option.name}</td>
-            <td>${option.available ? money(option.cost) : '不適用'}</td>
-            <td>${option.description}</td>
+            <td>${item.label}</td>
+            <td>${money(item.cost)}</td>
+            <td>${integer(item.coverage)}</td>
+            <td>${item.note}</td>
           `;
           detailTableBody.appendChild(row);
         });
       }
 
       function run() {
-        const usage = clampUsage(Number(usageInput.value));
-        usageInput.value = String(usage);
-        const result = calculate(usage);
-        render(result);
+        const params = getInputs();
+        usageInput.value = String(params.usage);
+        proIncludedInput.value = String(params.proIncluded);
+        proPlusIncludedInput.value = String(params.proPlusIncluded);
+        render(params);
       }
 
       calcBtn.addEventListener('click', run);
       resetBtn.addEventListener('click', function () {
-        usageInput.value = '600';
+        setDefaults();
         run();
       });
-      usageInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') run();
-      });
 
+      [usageInput, proPriceInput, proIncludedInput, proPlusPriceInput, proPlusIncludedInput, overagePriceInput]
+        .forEach((el) => {
+          el.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') run();
+          });
+        });
+
+      setDefaults();
       run();
     })();
   </script>
